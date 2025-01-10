@@ -1,11 +1,11 @@
 import sys
 import pygame
 
-from settings import Settings
-from ship import Ship
-from bullet import Bullet
+from side_settings import Settings
+from side_ship import Ship
+from side_bullet import Bullet
 
-class AlienInvasion:
+class SidewaysInvasion:
     """Overall class to manage game assets and behavior."""
 
     def __init__(self):
@@ -18,7 +18,7 @@ class AlienInvasion:
         self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         self.settings.screen_width = self.screen.get_rect().width
         self.settings.screen_height = self.screen.get_rect().height
-        pygame.display.set_caption("Alien Invasion")
+        pygame.display.set_caption("Sideways Alien Invasion")
 
         self.ship = Ship(self)
         self.bullets = pygame.sprite.Group()
@@ -44,10 +44,10 @@ class AlienInvasion:
 
     def _check_keydown_events(self, event):
         """Respond to keypresses."""
-        if event.key == pygame.K_RIGHT:
-            self.ship.moving_right = True
-        elif event.key == pygame.K_LEFT:
-            self.ship.moving_left = True
+        if event.key == pygame.K_DOWN:
+            self.ship.moving_down = True
+        elif event.key == pygame.K_UP:
+            self.ship.moving_up = True
         elif event.key == pygame.K_q:
             sys.exit()
         elif event.key == pygame.K_SPACE:
@@ -55,10 +55,10 @@ class AlienInvasion:
 
     def _check_keyup_events(self, event):
         """Respond to key releases."""
-        if event.key == pygame.K_RIGHT:
-            self.ship.moving_right = False
-        elif event.key == pygame.K_LEFT:
-            self.ship.moving_left = False
+        if event.key == pygame.K_DOWN:
+            self.ship.moving_down = False
+        elif event.key == pygame.K_UP:
+            self.ship.moving_up = False
 
     def _fire_bullet(self):
         """Create a new bullet and add it to the bullets group."""
@@ -80,11 +80,11 @@ class AlienInvasion:
         self.bullets.update()
         # Get rid of bullets that have disappeared.
         for bullet in self.bullets.copy():
-            if bullet.rect.bottom <= 0:
+            if bullet.rect.right >= self.settings.screen_width:
                 self.bullets.remove(bullet)
                 # print(len(self.bullets))
 
 if __name__ == '__main__':
     # Make a game instance, and run the game.
-    ai = AlienInvasion()
+    ai = SidewaysInvasion()
     ai.run_game()
