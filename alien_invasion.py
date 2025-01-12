@@ -1,10 +1,13 @@
 import sys
 from time import sleep
+from pathlib import Path
+import json
 
 import pygame
 
 from settings import Settings
 from game_stats import GameStats
+from scoreboard import Scoreboard
 from button import Button
 from ship import Ship
 from bullet import Bullet
@@ -16,6 +19,7 @@ class AlienInvasion:
     def __init__(self):
         """Initialize the game, and create game resources."""
         pygame.init()
+        
         self.clock = pygame.time.Clock()
         self.settings = Settings()
 
@@ -27,6 +31,7 @@ class AlienInvasion:
 
         # Create an instance to store game statistics.
         self.stats = GameStats(self)
+        self.sb = Scoreboard(self)
 
         self.ship = Ship(self)
         self.bullets = pygame.sprite.Group()
@@ -40,7 +45,9 @@ class AlienInvasion:
         # Make the Play button.
         self.play_button = Button(self, "Play")
 
-        self.level_buttons = [Button(self, "Easy"), Button(self, "Medium"), Button(self, "Hard")]
+        self.difficulty_buttons = [Button(self, "Easy"), Button(self, "Medium"), Button(self, "Hard")]
+        
+        self.load()
 
     def run_game(self):
         """Start the main loop for the game."""
@@ -59,7 +66,7 @@ class AlienInvasion:
         """Respond to keypresses and mouse events."""
         for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    sys.exit()
+                    self.exit()
                 elif event.type == pygame.KEYDOWN:
                     self._check_keydown_events(event)
                 elif event.type == pygame.KEYUP:
@@ -67,7 +74,7 @@ class AlienInvasion:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = pygame.mouse.get_pos()
                     self._check_play_button(mouse_pos)
-                    self._check_level_buttons(mouse_pos)
+                    self._check_difficulty_buttons(mouse_pos)
 
     def _check_play_button(self, mouse_pos):
         """Start a new game when the player clicks Play."""
@@ -75,20 +82,23 @@ class AlienInvasion:
         if button_clicked and not self.game_active:
             self._start_game()
 
-    def _check_level_buttons(self, mouse_pos):
+    def _check_difficulty_buttons(self, mouse_pos):
         for i in range(0, 3):
-            button_clicked = self.level_buttons[i].rect.collidepoint(mouse_pos)
+            button_clicked = self.difficulty_buttons[i].rect.collidepoint(mouse_pos)
             if button_clicked and not self.game_active:
-                for button in self.level_buttons:
+                for button in self.difficulty_buttons:
                     button.button_color = (0, 135, 0)
-                self.level_buttons[i].button_color = (135, 0, 0)
-                print(f"{i} {self.level_buttons[i].button_color}")
-                self.settings.level = i+1
+                self.difficulty_buttons[i].button_color = (135, 0, 0)
+                print(f"{i} {self.difficulty_buttons[i].button_color}")
+                self.settings.difficulty = i+1
                 # self._draw_level_buttons()
 
     def _start_game(self):
         self.settings.initialize_dynamic_settings()
         self.stats.reset_stats()
+        self.sb.prep_score()
+        self.sb.prep_level()
+        self.sb.prep_ships()
         self.game_active = True
         self.bullets.empty()
         self.aliens.empty()
@@ -96,7 +106,7 @@ class AlienInvasion:
         self.ship.center_ship()
         # Hide the mouse cursor.
         pygame.mouse.set_visible(False)
-        self.settings.set_level(self.settings.level)
+        self.settings.set_level(self.settings.difficulty)
 
     def _check_keydown_events(self, event):
         """Respond to keypresses."""
@@ -105,11 +115,24 @@ class AlienInvasion:
         elif event.key == pygame.K_LEFT:
             self.ship.moving_left = True
         elif event.key == pygame.K_q or event.key == pygame.K_ESCAPE:
-            sys.exit()
+            self.exit()
         elif event.key == pygame.K_p:
             self._start_game()
         elif event.key == pygame.K_SPACE:
             self._fire_bullet()
+
+    def load(self):
+        path = Path(self.stats.filename)
+        if path.exists():
+            contents = path.read_text()
+            self.stats.high_score = int(json.loads(contents))
+            self.sb.prep_high_score()
+
+    def exit(self):
+        path = Path(self.stats.filename)
+        highscore = json.dumps(self.stats.high_score)
+        path.write_text(highscore)
+        sys.exit()
 
     def _check_keyup_events(self, event):
         """Respond to key releases."""
@@ -170,18 +193,20 @@ class AlienInvasion:
         self.ship.blitme()
         self.aliens.draw(self.screen)
 
+        self.sb.show_score()
+
         # Draw the play button if the game is inactive.
         if not self.game_active:
             self.play_button.draw_button()
 
-            self._draw_level_buttons()
+            self._draw_difficulty_buttons()
 
         pygame.display.flip()
 
-    def _draw_level_buttons(self):
+    def _draw_difficulty_buttons(self):
         i = 1
-        for button in self.level_buttons:
-            if self.settings.level == i:
+        for button in self.difficulty_buttons:
+            if self.settings.difficulty == i:
                 button.button_color = (135, 0, 0)
             button.rect.bottomleft = self.screen.get_rect().bottomleft
             # button.rect.x += 10 * i
@@ -193,7 +218,7 @@ class AlienInvasion:
             i += 1
 
     def _update_buttons(self):
-        for button in self.level_buttons:
+        for button in self.difficulty_buttons:
             button.update_button()
 
     def _update_bullets(self):
@@ -212,11 +237,20 @@ class AlienInvasion:
         """Respond to bullet-alien collisions."""
         # Remove any bullets and aliens that have collided.
         collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+        if collisions:
+            for aliens in collisions.values():
+                self.stats.score += self.settings.alien_points * len(aliens)
+            self.sb.prep_score()
+            self.sb.check_high_score()
         if not self.aliens:
             # Destroy existing bullets and create new fleet.
             self.bullets.empty()
             self._create_fleet()
             self.settings.increase_speed()
+
+            # Increase level.
+            self.stats.level += 1
+            self.sb.prep_level()
 
 
     def _update_aliens(self):
@@ -233,10 +267,10 @@ class AlienInvasion:
 
     def _ship_hit(self):
         """Respond to the ship being hit by an alien."""
+        # Decrement ships left.
+        self.stats.ships_left -= 1
+        self.sb.prep_ships()
         if self.stats.ships_left > 0:
-            # Decrement ships left.
-            self.stats.ships_left -= 1
-            
             # Get rid of any remaining bullets and aliens.
             self.bullets.empty()
             self.aliens.empty()
