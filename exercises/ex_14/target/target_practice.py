@@ -2,6 +2,7 @@ import pygame
 import sys
 
 from t_button import Button
+from t_settings import Settings
 from target import Target
 from t_ship import Ship
 from t_bullet import Bullet
@@ -14,6 +15,7 @@ class TargetPractice:
         self.screen = pygame.display.set_mode((1200, 800))
         pygame.display.set_caption("Target")
 
+        self.settings = Settings()
         self.target = Target(self)
         self.ship = Ship(self)
         self.bullets = pygame.sprite.Group()
@@ -62,9 +64,11 @@ class TargetPractice:
         button_clicked = self.play_button.rect.collidepoint(mouse_pos)
         if button_clicked and not self.game_active:
             self._start_game()
+            self.settings.initialize_dynamic_settings()
 
     def _start_game(self):
         self.hit_stats = 0
+        self.target.reset()
         self.game_active = True
         self.bullets.empty()
         self.ship.center_ship()
@@ -103,16 +107,18 @@ class TargetPractice:
                 self.bullets.remove(bullet)
                 self.hit_stats += 1
                 # print(len(self.bullets))
-        self._check_bullet_alien_collisions()
-        if self.hit_stats >= 3:
+        self._check_bullet_target_collisions()
+        if self.hit_stats >= 20:
             self._end_game()
 
-    def _check_bullet_alien_collisions(self):
+    def _check_bullet_target_collisions(self):
         """Respond to bullet-alien collisions."""
         # Remove any bullets and aliens that have collided.
         collisions = pygame.sprite.spritecollideany(self.target, self.bullets)
         if collisions:
+            self.bullets.remove(collisions)
             self.target.hit_react()
+            self.settings.increase_speed()
 
     def _update_screen(self):
         self.screen.fill((0, 0, 0))

@@ -40,6 +40,8 @@ class AlienInvasion:
         # Make the Play button.
         self.play_button = Button(self, "Play")
 
+        self.level_buttons = [Button(self, "Easy"), Button(self, "Medium"), Button(self, "Hard")]
+
     def run_game(self):
         """Start the main loop for the game."""
         while True:
@@ -49,7 +51,7 @@ class AlienInvasion:
                 self.ship.update()
                 self._update_bullets()
                 self._update_aliens()
-
+            # self._update_buttons()
             self._update_screen()
             self.clock.tick(60)
 
@@ -65,6 +67,7 @@ class AlienInvasion:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = pygame.mouse.get_pos()
                     self._check_play_button(mouse_pos)
+                    self._check_level_buttons(mouse_pos)
 
     def _check_play_button(self, mouse_pos):
         """Start a new game when the player clicks Play."""
@@ -72,7 +75,19 @@ class AlienInvasion:
         if button_clicked and not self.game_active:
             self._start_game()
 
+    def _check_level_buttons(self, mouse_pos):
+        for i in range(0, 3):
+            button_clicked = self.level_buttons[i].rect.collidepoint(mouse_pos)
+            if button_clicked and not self.game_active:
+                for button in self.level_buttons:
+                    button.button_color = (0, 135, 0)
+                self.level_buttons[i].button_color = (135, 0, 0)
+                print(f"{i} {self.level_buttons[i].button_color}")
+                self.settings.level = i+1
+                # self._draw_level_buttons()
+
     def _start_game(self):
+        self.settings.initialize_dynamic_settings()
         self.stats.reset_stats()
         self.game_active = True
         self.bullets.empty()
@@ -81,6 +96,7 @@ class AlienInvasion:
         self.ship.center_ship()
         # Hide the mouse cursor.
         pygame.mouse.set_visible(False)
+        self.settings.set_level(self.settings.level)
 
     def _check_keydown_events(self, event):
         """Respond to keypresses."""
@@ -158,7 +174,27 @@ class AlienInvasion:
         if not self.game_active:
             self.play_button.draw_button()
 
+            self._draw_level_buttons()
+
         pygame.display.flip()
+
+    def _draw_level_buttons(self):
+        i = 1
+        for button in self.level_buttons:
+            if self.settings.level == i:
+                button.button_color = (135, 0, 0)
+            button.rect.bottomleft = self.screen.get_rect().bottomleft
+            # button.rect.x += 10 * i
+            button.rect.y -= 10 * i
+            button.rect.y -= (i - 1) * button.rect.height
+            button.draw_button()
+            button.update_msg_position()
+            # i += button.rect.height
+            i += 1
+
+    def _update_buttons(self):
+        for button in self.level_buttons:
+            button.update_button()
 
     def _update_bullets(self):
         """Update position of bullets and get rid of old bullets."""
@@ -180,6 +216,7 @@ class AlienInvasion:
             # Destroy existing bullets and create new fleet.
             self.bullets.empty()
             self._create_fleet()
+            self.settings.increase_speed()
 
 
     def _update_aliens(self):

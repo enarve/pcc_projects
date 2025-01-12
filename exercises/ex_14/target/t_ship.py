@@ -12,7 +12,7 @@ class Ship:
         self.image = pygame.image.load('exercises/ex_14/target/new_ship.bmp')
         self.rect = self.image.get_rect()
 
-        self.ship_speed = 10
+        self.settings = ai_game.settings
 
         # Start each new ship at the bottom center of the screen.
         self.rect.midleft = self.screen_rect.midleft
@@ -27,9 +27,9 @@ class Ship:
     def update(self):
         """Update the ship's position based on the movement flag."""
         if self.moving_down and self.rect.bottom < self.screen_rect.bottom:
-            self.y += self.ship_speed
+            self.y += self.settings.ship_speed
         if self.moving_up and self.rect.top > 0:
-            self.y -= self.ship_speed
+            self.y -= self.settings.ship_speed
 
         # Update rect object from self.y
         self.rect.y = self.y
