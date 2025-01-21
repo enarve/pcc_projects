@@ -1,15 +1,21 @@
 import requests
 
-# Make an API call and check the response.
-url = "https://api.github.com/search/repositories"
-url += "?q=language:python+sort:stars+stars:>10000"
+response_dict = {}
 
-headers = {"Accept": "application/vnd.github.v3+json"}
-r = requests.get(url, headers=headers)
-print(f"Status code: {r.status_code}")
+def make_request():
+    # Make an API call and check the response.
+    url = "https://api.github.com/search/repositories"
+    url += "?q=language:python+sort:stars+stars:>10000"
 
-# Convert the response object to a dictionary.
-response_dict = r.json()
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    r = requests.get(url, headers=headers)
+    print(f"Status code: {r.status_code}")
+
+    # Convert the response object to a dictionary.
+    response_dict = r.json()
+    return (response_dict, r.status_code)
+
+response_dict = make_request()[0]
 
 print(f"Total repositories: {response_dict['total_count']}")
 print(f"Complete results: {not response_dict['incomplete_results']}")
