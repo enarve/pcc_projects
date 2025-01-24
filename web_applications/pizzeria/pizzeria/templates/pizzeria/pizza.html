@@ -1,0 +1,16 @@
+{% extends 'pizzeria/base.html' %}
+
+{% block content %}
+  <p>Menu</p>
+  <ul>
+    {% for topping in toppings %}
+    <li>
+        {% comment %} <a href="{% url 'pizzeria/' %}"> {% endcomment %}
+            {{topping.name}}
+        {% comment %} </a> {% endcomment %}
+    </li>
+    {% empty %}
+    <li>No toppings in this pizza...</li>
+    {% endfor %}
+  </ul>
+{% endblock content %}
