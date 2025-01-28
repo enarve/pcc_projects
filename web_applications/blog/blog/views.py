@@ -1,4 +1,7 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
+
 from .models import Blog, BlogPost
 from .forms import BlogForm, BlogPostForm
 
@@ -27,6 +30,7 @@ def post(request, post_id):
     }
     return render(request, 'blog/post.html', context=context)
 
+@login_required
 def make_blog(request):
     if request.method != 'POST':
         form = BlogForm()
@@ -35,7 +39,9 @@ def make_blog(request):
         data = request.POST
         form = BlogForm(data)
         if form.is_valid():
-            form.save()
+            blog = form.save(commit=False)
+            blog.owner = request.user
+            blog.save()
             return redirect('blog:index')
 
     context = {
@@ -43,7 +49,7 @@ def make_blog(request):
     }
     return render(request, 'blog/make_blog.html', context=context)
 
-
+@login_required
 def make_post(request, blog_id):
     blog = Blog.objects.get(id=blog_id)
     if request.method != 'POST':
@@ -64,9 +70,13 @@ def make_post(request, blog_id):
     }
     return render(request, 'blog/make_post.html', context=context)
 
+@login_required
 def edit_post(request, post_id):
+    
     post = BlogPost.objects.get(id=post_id)
     blog = post.blog
+    if blog.owner != request.user:
+        raise Http404
     if request.method != 'POST':
         form = BlogPostForm(instance=post)
 

@@ -9,7 +9,7 @@
       <li>
         <a href="{% url 'blog:blog' blog.id %}">
             {{ blog.title }}
-        </a>
+        </a> by {{ blog.owner.username }}
         
     </li>
       {% endfor %}

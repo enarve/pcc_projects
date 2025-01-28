@@ -2,6 +2,7 @@
 
 {% block content %}
 <h2>{{ blog.title }}</h2>
+<h3> by {{ blog.owner.username }} </h3>
 <p>
     <a href="{% url 'blog:make_post' blog.id %}">
         Make post
