@@ -2,3 +2,4 @@ __pycache__/
 .DS_Store
 ll_env/
 env/
+*.sqlite3
